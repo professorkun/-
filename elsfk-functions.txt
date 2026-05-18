@@ -63,11 +63,15 @@
 43. gameLoop(timestamp) - 游戏主循环
 
 【H. 输入处理】
-44. handleKeyDown(e) - 键盘按下事件
-45. handleKeyUp(e) - 键盘释放事件
+66. handleKeyDown(e) - 键盘按下事件
+67. handleKeyUp(e) - 键盘释放事件
+68. handleTouchStart(e) - 触摸按钮按下处理
+69. handleTouchEnd(e) - 触摸按钮释放处理
+70. handleTouchMove(e) - 触摸移动处理（防止滚动）
+71. handleTouchCancel(e) - 触摸取消处理
 
 【I. 初始化】
-46. init() - 初始化游戏
+72. init() - 初始化游戏
 
 
 =======================================
@@ -245,6 +249,30 @@ handleKeyDown(e)
 
 handleKeyUp(e)
 └── [更新按键状态变量]
+
+### 触摸事件处理流程
+handleTouchStart(e)
+├── [获取触摸目标按钮]
+├── [游戏结束] 重置游戏
+├── [暂停状态] 处理暂停/恢复
+└── [正常游戏] 根据按钮执行操作
+    ├── rotate → tryRotate()
+    ├── left → tryMove(-1, 0)
+    ├── right → tryMove(1, 0)
+    ├── down → 设置softDropActive=true
+    ├── harddrop → hardDrop()
+    └── pause → 设置paused=true
+
+handleTouchEnd(e)
+├── [移除按钮激活状态]
+└── [如果是down按钮] 设置softDropActive=false
+
+handleTouchMove(e)
+└── [阻止默认行为，防止页面滚动]
+
+handleTouchCancel(e)
+├── [移除按钮激活状态]
+└── 设置softDropActive=false
 
 
 =======================================

@@ -46,7 +46,7 @@
         .game-wrapper {
             display: flex;
             gap: 24px;
-            align-items: stretch;
+            align-items: flex-start;
             background: var(--surface);
             border-radius: 20px;
             padding: 28px 32px;
@@ -57,6 +57,11 @@
             position: relative;
             max-width: 100%;
             max-height: 100%;
+        }
+
+        /* 顶部信息栏 */
+        .top-bar {
+            display: none;
         }
 
         /* 主游戏画布容器 */
@@ -189,8 +194,8 @@
         .mobile-controls {
             display: none;
             flex-direction: column;
-            gap: 12px;
-            padding: 16px;
+            gap: 8px;
+            padding: 12px;
         }
 
         .touch-row {
@@ -200,15 +205,15 @@
         }
 
         .touch-btn {
-            width: 56px;
-            height: 56px;
+            width: 52px;
+            height: 52px;
             background: var(--touch-btn-bg);
             border: 2px solid var(--border);
-            border-radius: 16px;
+            border-radius: 14px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 24px;
+            font-size: 22px;
             color: #ffffff;
             font-weight: bold;
             transition: all 0.1s ease;
@@ -230,23 +235,19 @@
         }
 
         .touch-btn-rotate {
-            font-size: 20px;
+            font-size: 18px;
         }
 
         .touch-btn-harddrop {
-            width: 124px;
-            font-size: 14px;
+            width: 116px;
+            font-size: 13px;
             background: linear-gradient(135deg, #e94560 0%, #c73048 100%);
             border-color: #ff6b6b;
         }
 
         .touch-btn-pause {
-            font-size: 16px;
-            width: 124px;
-        }
-
-        .touch-btn-special {
-            width: 124px;
+            font-size: 14px;
+            width: 116px;
         }
 
         /* ============================================ */
@@ -263,13 +264,23 @@
                 overflow-y: auto;
             }
 
-            .side-panel {
-                flex-direction: row;
-                flex-wrap: wrap;
-                justify-content: center;
+            .top-bar {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
                 gap: 12px;
-                min-width: auto;
-                padding-top: 0;
+                width: 100%;
+            }
+
+            .stats-row {
+                display: flex;
+                gap: 12px;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .preview-section {
+                order: -1;
             }
 
             .panel-section {
@@ -313,46 +324,78 @@
         @media (max-width: 480px) {
             body {
                 padding: 4px;
+                align-items: flex-start;
+                padding-top: 12px;
             }
 
             .game-wrapper {
+                flex-direction: column;
+                align-items: center;
                 padding: 12px 8px;
-                gap: 12px;
+                gap: 8px;
                 border-radius: 12px;
+                max-height: calc(100vh - 24px);
+                overflow-y: visible;
+                width: 100%;
+                max-width: 320px;
+            }
+
+            .top-bar {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                width: 100%;
+                padding-bottom: 4px;
+            }
+
+            .stats-row {
+                display: flex;
+                gap: 8px;
+                flex: 1;
+                justify-content: center;
+            }
+
+            .preview-section {
+                order: 0;
+                flex-shrink: 0;
             }
 
             canvas#gameCanvas {
-                width: calc(100vw - 32px);
+                width: calc(100vw - 24px);
                 max-width: 270px;
                 height: auto;
+                flex-shrink: 0;
             }
 
             canvas#previewCanvas {
-                width: 64px;
-                height: 64px;
+                width: 60px;
+                height: 60px;
             }
 
             .panel-section {
-                padding: 10px 12px;
-                min-width: 60px;
+                padding: 8px 10px;
+                min-width: 56px;
             }
 
             .panel-value {
-                font-size: 18px;
+                font-size: 16px;
             }
 
             .panel-label {
-                font-size: 8px;
-                letter-spacing: 1.5px;
-            }
-
-            .side-panel {
-                gap: 8px;
+                font-size: 7px;
+                letter-spacing: 1px;
+                margin-bottom: 4px;
             }
 
             /* 显示移动端虚拟按键 */
             .mobile-controls {
                 display: flex;
+                width: 100%;
+                padding: 8px 0;
+                padding-bottom: 16px;
+                box-sizing: content-box;
             }
 
             /* 隐藏键盘提示 */
@@ -361,20 +404,39 @@
             }
 
             .touch-btn {
-                width: 50px;
-                height: 50px;
-                border-radius: 14px;
-                font-size: 20px;
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
+                font-size: 18px;
             }
 
             .touch-btn-harddrop,
-            .touch-btn-pause,
-            .touch-btn-special {
-                width: 110px;
+            .touch-btn-pause {
+                width: 104px;
             }
 
             .touch-btn-harddrop {
-                font-size: 12px;
+                font-size: 11px;
+            }
+
+            .touch-btn-pause {
+                font-size: 13px;
+            }
+
+            .touch-row {
+                gap: 6px;
+            }
+
+            .touch-row-top {
+                justify-content: center;
+            }
+
+            .touch-row-center {
+                justify-content: center;
+            }
+
+            .touch-row-bottom {
+                justify-content: center;
             }
         }
 
@@ -382,30 +444,60 @@
         /* 超小屏幕设备 */
         /* ============================================ */
         @media (max-width: 320px) {
+            body {
+                padding: 2px;
+                padding-top: 8px;
+            }
+
             canvas#gameCanvas {
-                width: calc(100vw - 24px);
+                width: calc(100vw - 16px);
                 max-width: 240px;
             }
 
+            canvas#previewCanvas {
+                width: 52px;
+                height: 52px;
+            }
+
             .touch-btn {
-                width: 44px;
-                height: 44px;
-                font-size: 18px;
+                width: 42px;
+                height: 42px;
+                font-size: 16px;
+                border-radius: 10px;
             }
 
             .touch-btn-harddrop,
-            .touch-btn-pause,
-            .touch-btn-special {
-                width: 96px;
+            .touch-btn-pause {
+                width: 92px;
+            }
+
+            .touch-btn-harddrop {
+                font-size: 10px;
+            }
+
+            .touch-btn-pause {
+                font-size: 12px;
             }
 
             .panel-section {
-                min-width: 50px;
-                padding: 8px 10px;
+                min-width: 48px;
+                padding: 6px 8px;
             }
 
             .panel-value {
-                font-size: 16px;
+                font-size: 14px;
+            }
+
+            .panel-label {
+                font-size: 6px;
+            }
+
+            .top-bar {
+                gap: 8px;
+            }
+
+            .stats-row {
+                gap: 6px;
             }
         }
 
@@ -425,28 +517,14 @@
                 max-height: 95vh;
             }
 
+            .top-bar {
+                display: none;
+            }
+
             canvas#gameCanvas {
                 width: auto;
                 height: calc(95vh - 32px);
-                max-height: 400px;
-            }
-
-            .side-panel {
-                flex-direction: column;
-                gap: 8px;
-                min-width: 80px;
-            }
-
-            .panel-section {
-                padding: 8px 10px;
-            }
-
-            .panel-value {
-                font-size: 16px;
-            }
-
-            .panel-label {
-                font-size: 8px;
+                max-height: 360px;
             }
 
             canvas#previewCanvas {
@@ -468,12 +546,41 @@
             }
 
             .touch-btn {
-                width: 44px;
-                height: 44px;
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+
+            .touch-btn-harddrop,
+            .touch-btn-pause {
+                width: 88px;
+                font-size: 10px;
             }
 
             .key-hints {
                 display: none;
+            }
+        }
+
+        /* ============================================ */
+        /* 小屏幕横屏模式 */
+        /* ============================================ */
+        @media (orientation: landscape) and (max-height: 360px) {
+            canvas#gameCanvas {
+                height: calc(95vh - 24px);
+                max-height: 280px;
+            }
+
+            .touch-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
+
+            .touch-btn-harddrop,
+            .touch-btn-pause {
+                width: 80px;
+                font-size: 9px;
             }
         }
     </style>
@@ -481,37 +588,30 @@
 <body>
 
     <div class="game-wrapper">
-        <!-- 游戏主画布 -->
-        <div class="canvas-container">
-            <canvas id="gameCanvas"></canvas>
-        </div>
-
-        <!-- 侧边信息栏 -->
-        <div class="side-panel">
+        <!-- 顶部信息栏（移动端） -->
+        <div class="top-bar">
             <!-- 下一个方块预览 -->
-            <div class="panel-section">
-                <div class="panel-label">下一个方块</div>
+            <div class="panel-section preview-section">
+                <div class="panel-label">下一个</div>
                 <div class="preview-wrapper">
                     <canvas id="previewCanvas"></canvas>
                 </div>
             </div>
-
-            <!-- 分数 -->
-            <div class="panel-section">
-                <div class="panel-label">得分</div>
-                <div class="panel-value" id="scoreDisplay">0</div>
-            </div>
-
-            <!-- 等级 -->
-            <div class="panel-section">
-                <div class="panel-label">等级</div>
-                <div class="panel-value" id="levelDisplay">1</div>
-            </div>
-
-            <!-- 已消除行数 -->
-            <div class="panel-section">
-                <div class="panel-label">消除行数</div>
-                <div class="panel-value" id="linesDisplay">0</div>
+            
+            <!-- 游戏数据 -->
+            <div class="stats-row">
+                <div class="panel-section">
+                    <div class="panel-label">得分</div>
+                    <div class="panel-value" id="scoreDisplay">0</div>
+                </div>
+                <div class="panel-section">
+                    <div class="panel-label">等级</div>
+                    <div class="panel-value" id="levelDisplay">1</div>
+                </div>
+                <div class="panel-section">
+                    <div class="panel-label">行数</div>
+                    <div class="panel-value" id="linesDisplay">0</div>
+                </div>
             </div>
 
             <!-- 按键提示（桌面端） -->
@@ -534,17 +634,22 @@
             </div>
         </div>
 
+        <!-- 游戏主画布 -->
+        <div class="canvas-container">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+
         <!-- 移动端虚拟按键 -->
         <div class="mobile-controls">
-            <div class="touch-row">
+            <div class="touch-row touch-row-top">
                 <div class="touch-btn touch-btn-rotate" data-action="rotate">↻</div>
             </div>
-            <div class="touch-row">
+            <div class="touch-row touch-row-center">
                 <div class="touch-btn" data-action="left">←</div>
                 <div class="touch-btn" data-action="down">↓</div>
                 <div class="touch-btn" data-action="right">→</div>
             </div>
-            <div class="touch-row">
+            <div class="touch-row touch-row-bottom">
                 <div class="touch-btn touch-btn-harddrop" data-action="harddrop">硬降</div>
                 <div class="touch-btn touch-btn-pause" data-action="pause">暂停</div>
             </div>
