@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>俄罗斯方块 - Tetris</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --surface: #16213e;
+            --text: #e0e0e0;
+            --accent: #e94560;
+            --gold: #f0c060;
+            --border: #2a2a4a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 40%, #16213e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .game-wrapper {
+            display: flex;
+            gap: 24px;
+            align-items: stretch;
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 28px 32px;
+            box-shadow:
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                0 0 0 1px var(--border),
+                inset 0 1px 0 rgba(255, 255, 255, 0.03);
+            position: relative;
+        }
+
+        /* 主游戏画布容器 */
+        .canvas-container {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow:
+                0 0 0 3px #2a2a50,
+                0 0 0 6px #1a1a35,
+                0 8px 32px rgba(0, 0, 0, 0.4);
+            flex-shrink: 0;
+        }
+
+        canvas#gameCanvas {
+            display: block;
+            background: #0a0a18;
+            border-radius: 8px;
+        }
+
+        /* 侧边信息栏 */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 150px;
+            justify-content: flex-start;
+            padding-top: 8px;
+        }
+
+        .panel-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 14px;
+            padding: 18px 16px;
+            border: 1px solid var(--border);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .panel-section:hover {
+            border-color: #3a3a60;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .panel-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #8888aa;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .panel-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 1px;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .panel-value.score-pop {
+            animation: scorePop 0.4s ease-out;
+        }
+
+        @keyframes scorePop {
+            0% {
+                transform: scale(1);
+            }
+            40% {
+                transform: scale(1.25);
+                color: #ffe066;
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* 预览画布 */
+        .preview-wrapper {
+            position: relative;
+            display: inline-block;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 0 2px #252545;
+        }
+
+        canvas#previewCanvas {
+            display: block;
+            background: #0a0a18;
+            border-radius: 8px;
+        }
+
+        /* 按键提示 */
+        .key-hints {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 11px;
+            color: #666688;
+            letter-spacing: 0.5px;
+        }
+
+        .key-hint-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .key-badge {
+            display: inline-block;
+            background: #1e1e3a;
+            border: 1px solid #3a3a55;
+            border-radius: 5px;
+            padding: 3px 7px;
+            font-size: 10px;
+            font-weight: 600;
+            color: #aaaacc;
+            letter-spacing: 1px;
+            min-width: 22px;
+            text-align: center;
+            box-shadow: 0 2px 0 #111122;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 650px) {
+            .game-wrapper {
+                flex-direction: column;
+                align-items: center;
+                padding: 16px 12px;
+                gap: 16px;
+                border-radius: 16px;
+            }
+            .side-panel {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 12px;
+                min-width: auto;
+                padding-top: 0;
+            }
+            .panel-section {
+                padding: 12px 14px;
+                flex: 1 1 auto;
+                min-width: 70px;
+            }
+            .panel-value {
+                font-size: 22px;
+            }
+            .panel-label {
+                font-size: 9px;
+                letter-spacing: 2px;
+                margin-bottom: 6px;
+            }
+            .key-hints {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 4px 12px;
+                justify-content: center;
+                font-size: 10px;
+            }
+            canvas#gameCanvas {
+                width: 270px;
+                height: 540px;
+            }
+            canvas#previewCanvas {
+                width: 80px;
+                height: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-wrapper">
+        <!-- 游戏主画布 -->
+        <div class="canvas-container">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+
+        <!-- 侧边信息栏 -->
+        <div class="side-panel">
+            <!-- 下一个方块预览 -->
+            <div class="panel-section">
+                <div class="panel-label">下一个方块</div>
+                <div class="preview-wrapper">
+                    <canvas id="previewCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- 分数 -->
+            <div class="panel-section">
+                <div class="panel-label">得分</div>
+                <div class="panel-value" id="scoreDisplay">0</div>
+            </div>
+
+            <!-- 等级 -->
+            <div class="panel-section">
+                <div class="panel-label">等级</div>
+                <div class="panel-value" id="levelDisplay">1</div>
+            </div>
+
+            <!-- 已消除行数 -->
+            <div class="panel-section">
+                <div class="panel-label">消除行数</div>
+                <div class="panel-value" id="linesDisplay">0</div>
+            </div>
+
+            <!-- 按键提示 -->
+            <div class="key-hints">
+                <div class="key-hint-row">
+                    <span class="key-badge">← →</span> 移动
+                </div>
+                <div class="key-hint-row">
+                    <span class="key-badge">↑</span> 旋转
+                </div>
+                <div class="key-hint-row">
+                    <span class="key-badge">↓</span> 软降
+                </div>
+                <div class="key-hint-row">
+                    <span class="key-badge">Space</span> 硬降
+                </div>
+                <div class="key-hint-row">
+                    <span class="key-badge">P</span> 暂停
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ==================== DOM 元素引用 ====================
+            const gameCanvas = document.getElementById('gameCanvas');
+            const gameCtx = gameCanvas.getContext('2d');
+            const previewCanvas = document.getElementById('previewCanvas');
+            const previewCtx = previewCanvas.getContext('2d');
+            const scoreDisplay = document.getElementById('scoreDisplay');
+            const levelDisplay = document.getElementById('levelDisplay');
+            const linesDisplay = document.getElementById('linesDisplay');
+
+            // ==================== 游戏常量 ====================
+            const COLS = 10; // 游戏区域列数（宽度）
+            const ROWS = 20; // 游戏区域行数（高度）
+            const CELL_SIZE = 30; // 每个单元格的像素大小
+            const GAME_WIDTH = COLS * CELL_SIZE; // 游戏区域宽度 300px
+            const GAME_HEIGHT = ROWS * CELL_SIZE; // 游戏区域高度 600px
+            const GAME_OFFSET_X = 40; // 游戏区域在Canvas中的X偏移
+            const GAME_OFFSET_Y = 20; // 游戏区域在Canvas中的Y偏移
+            const CANVAS_WIDTH = GAME_WIDTH + GAME_OFFSET_X * 2 + 160; // 总Canvas宽度
+            const CANVAS_HEIGHT = GAME_HEIGHT + GAME_OFFSET_Y * 2; // 总Canvas高度
+            const PREVIEW_CELL_SIZE = 24; // 预览区域单元格大小
+            const PREVIEW_SIZE = PREVIEW_CELL_SIZE * 4; // 预览区域大小 96px
+
+            // 设置Canvas尺寸
+            gameCanvas.width = CANVAS_WIDTH;
+            gameCanvas.height = CANVAS_HEIGHT;
+            gameCanvas.style.width = CANVAS_WIDTH + 'px';
+            gameCanvas.style.height = CANVAS_HEIGHT + 'px';
+            previewCanvas.width = PREVIEW_SIZE;
+            previewCanvas.height = PREVIEW_SIZE;
+            previewCanvas.style.width = PREVIEW_SIZE + 'px';
+            previewCanvas.style.height = PREVIEW_SIZE + 'px';
+
+            // ==================== 方块颜色定义 ====================
+            // 7种经典俄罗斯方块颜色（带高光和阴影的3D效果配色）
+            const PIECE_COLORS = {
+                I: { main: '#00e5ff', light: '#80f0ff', dark: '#009faf', name: 'I' }, // 青色
+                O: { main: '#ffe030', light: '#fff080', dark: '#b8a000', name: 'O' }, // 黄色
+                T: { main: '#c840e9', light: '#e080ff', dark: '#7a20a0', name: 'T' }, // 紫色
+                S: { main: '#3cd820', light: '#80ff60', dark: '#1a8a00', name: 'S' }, // 绿色
+                Z: { main: '#e83020', light: '#ff7060', dark: '#a01000', name: 'Z' }, // 红色
+                J: { main: '#4080f0', light: '#80b0ff', dark: '#1a40a0', name: 'J' }, // 蓝色
+                L: { main: '#f0a030', light: '#ffc870', dark: '#b06800', name: 'L' }, // 橙色
+            };
+
+            // ==================== 7种经典方块形状（4×4矩阵） ====================
+            // 矩阵中1表示有方块，0表示空。所有形状使用4×4矩阵
+            const SHAPE_I = [
+                [0, 0, 0, 0],
+                [1, 1, 1, 1],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ];
+
+            const SHAPE_O = [
+                [1, 1, 0, 0],
+                [1, 1, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ];
+
+            const SHAPE_T = [
+                [0, 1, 0, 0],
+                [1, 1, 1, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ];
+
+            const SHAPE_S = [
+                [0, 1, 1, 0],
+                [1, 1, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ];
+
+            const SHAPE_Z = [
+                [1, 1, 0, 0],
+                [0, 1, 1, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ];
+
+            const SHAPE_J = [
+                [1, 0, 0, 0],
+                [1, 1, 1, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ];
+
+            const SHAPE_L = [
+                [0, 0, 1, 0],
+                [1, 1, 1, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ];
+
+            // 所有方块形状的集合
+            const ALL_SHAPES = [
+                { matrix: SHAPE_I, color: PIECE_COLORS.I },
+                { matrix: SHAPE_O, color: PIECE_COLORS.O },
+                { matrix: SHAPE_T, color: PIECE_COLORS.T },
+                { matrix: SHAPE_S, color: PIECE_COLORS.S },
+                { matrix: SHAPE_Z, color: PIECE_COLORS.Z },
+                { matrix: SHAPE_J, color: PIECE_COLORS.J },
+                { matrix: SHAPE_L, color: PIECE_COLORS.L },
+            ];
+
+            // ==================== 游戏状态 ====================
+            let board = []; // 游戏板：board[row][col]，存储颜色对象或null
+            let currentPiece = null; // 当前活动方块 { matrix, color, x, y }
+            let nextPieceData = null; // 下一个方块的形状和颜色数据
+            let score = 0;
+            let level = 1;
+            let totalLinesCleared = 0;
+            let gameOver = false;
+            let paused = false;
+            let animationId = null;
+
+            // 显示值追踪（用于脏检查优化）
+            let lastDisplayedScore = 0;
+            let lastDisplayedLevel = 1;
+            let lastDisplayedLines = 0;
+
+            // 随机袋系统（7-bag randomizer）：保证7种方块各出现一次后再重新洗牌
+            let pieceBag = [];
+
+            // 按键状态追踪
+            const keysPressed = new Set();
+            let rotationHandled = true; // 防止按住旋转键时连续旋转
+            let moveLeftCooldown = 0; // 左移冷却计时器（毫秒）
+            let moveRightCooldown = 0; // 右移冷却计时器（毫秒）
+            const MOVE_COOLDOWN = 55; // 移动冷却时间（毫秒），约每秒18次移动
+            const MOVE_INITIAL_DELAY = 160; // 首次移动后的初始延迟
+
+            // 重力计时
+            let gravityTimer = 0; // 重力累积计时器
+            let lastTime = 0; // 上一帧的时间戳
+
+            // 软降标志
+            let softDropActive = false;
+
+            // 消行动画状态
+            let clearingRows = []; // 正在消除的行索引
+            let clearAnimTimer = 0; // 消行动画计时器
+            const CLEAR_ANIM_DURATION = 180; // 消行动画持续时间（毫秒）
+
+            // 锁定延迟机制
+            let lockDelayTimer = 0; // 方块触底后的锁定延迟计时器
+            let lockDelayActive = false; // 是否正在计时锁定延迟
+            const LOCK_DELAY = 500; // 锁定延迟时间（毫秒）
+            const LOCK_DELAY_MOVES_RESET = true; // 移动后是否重置锁定延迟
+
+            // ==================== 辅助函数 ====================
+
+            /**
+             * 深拷贝二维数组（用于复制方块矩阵）
+             * @param {Array<Array<number>>} matrix - 要复制的二维数组
+             * @returns {Array<Array<number>>} 新的二维数组副本
+             */
+            function deepCopyMatrix(matrix) {
+                return matrix.map(row => [...row]);
+            }
+
+            /**
+             * 顺时针旋转4×4矩阵90度
+             * 矩阵变换公式：newMatrix[i][j] = oldMatrix[j][3-i]
+             * @param {Array<Array<number>>} matrix - 要旋转的矩阵
+             * @returns {Array<Array<number>>} 旋转后的新矩阵
+             */
+            function rotateMatrixClockwise(matrix) {
+                const size = matrix.length;
+                const rotated = Array.from({ length: size }, () => Array(size).fill(0));
+                for (let i = 0; i < size; i++) {
+                    for (let j = 0; j < size; j++) {
+                        rotated[i][j] = matrix[j][size - 1 - i];
+                    }
+                }
+                return rotated;
+            }
+
+            /**
+             * 判断是否为O型方块（2×2正方形，旋转后不变）
+             * @param {Array<Array<number>>} matrix - 要检查的矩阵
+             * @returns {boolean} 是否为O型方块
+             */
+            function isOShape(matrix) {
+                // O型特征：4×4矩阵中左上角2×2全为1，其余为0
+                if (matrix.length !== 4) return false;
+                let count = 0;
+                for (let r = 0; r < 4; r++) {
+                    for (let c = 0; c < 4; c++) {
+                        if (matrix[r][c] === 1) count++;
+                    }
+                }
+                // O型恰好有4个1，且分布在2×2区域
+                if (count !== 4) return false;
+                return matrix[0][0] === 1 && matrix[0][1] === 1 &&
+                    matrix[1][0] === 1 && matrix[1][1] === 1;
+            }
+
+            /**
+             * 获取方块矩阵中所有被占用的单元格坐标
+             * @param {Array<Array<number>>} matrix - 方块矩阵
+             * @returns {Array<{row: number, col: number}>} 被占用单元格的坐标数组
+             */
+            function getOccupiedCells(matrix) {
+                const cells = [];
+                for (let r = 0; r < matrix.length; r++) {
+                    for (let c = 0; c < matrix[r].length; c++) {
+                        if (matrix[r][c] === 1) {
+                            cells.push({ row: r, col: c });
+                        }
+                    }
+                }
+                return cells;
+            }
+
+            /**
+             * 计算方块矩阵的边界（用于正确的居中计算）
+             * @param {Array<Array<number>>} matrix - 方块矩阵
+             * @returns {{minCol: number, maxCol: number, width: number}} 矩阵的最小列、最大列和宽度
+             */
+            function getMatrixBounds(matrix) {
+                let minCol = matrix[0].length;
+                let maxCol = 0;
+                for (let r = 0; r < matrix.length; r++) {
+                    for (let c = 0; c < matrix[r].length; c++) {
+                        if (matrix[r][c] === 1) {
+                            if (c < minCol) minCol = c;
+                            if (c > maxCol) maxCol = c;
+                        }
+                    }
+                }
+                return { minCol, maxCol, width: maxCol - minCol + 1 };
+            }
+
+            // ==================== 游戏板操作 ====================
+
+            /**
+             * 初始化/清空游戏板
+             * 创建一个 ROWS × COLS 的二维数组，所有元素初始化为 null（空）
+             */
+            function createBoard() {
+                board = [];
+                for (let row = 0; row < ROWS; row++) {
+                    board[row] = new Array(COLS).fill(null);
+                }
+            }
+
+            /**
+             * 检查给定位置是否合法（不超出边界且不与其他方块重叠）
+             * @param {Array<Array<number>>} matrix - 方块矩阵
+             * @param {number} px - 方块在游戏板上的X坐标
+             * @param {number} py - 方块在游戏板上的Y坐标
+             * @returns {boolean} 位置是否合法
+             */
+            function isValidPosition(matrix, px, py) {
+                const cells = getOccupiedCells(matrix);
+                for (const cell of cells) {
+                    const boardRow = py + cell.row;
+                    const boardCol = px + cell.col;
+                    // 检查边界
+                    if (boardCol < 0 || boardCol >= COLS) return false;
+                    if (boardRow < 0 || boardRow >= ROWS) return false;
+                    // 检查是否与已固定的方块重叠
+                    if (boardRow >= 0 && board[boardRow][boardCol] !== null) return false;
+                }
+                return true;
+            }
+
+            /**
+             * 将当前方块固定到游戏板上
+             * 将方块的每个单元格颜色保存到对应的游戏板位置
+             * @param {{matrix: Array<Array<number>>, color: {main: string, light: string, dark: string, name: string}, x: number, y: number}} piece - 要固定的方块
+             */
+            function lockPiece(piece) {
+                const cells = getOccupiedCells(piece.matrix);
+                for (const cell of cells) {
+                    const boardRow = piece.y + cell.row;
+                    const boardCol = piece.x + cell.col;
+                    if (boardRow >= 0 && boardRow < ROWS && boardCol >= 0 && boardCol < COLS) {
+                        board[boardRow][boardCol] = piece.color;
+                    }
+                }
+            }
+
+            /**
+             * 检查并消除已填满的行，返回消除的行数
+             * 找到所有被填满的行，启动消行动画
+             * @returns {number} 消除的行数
+             */
+            function clearFullRows() {
+                const fullRowIndices = [];
+                for (let row = 0; row < ROWS; row++) {
+                    if (board[row].every(cell => cell !== null)) {
+                        fullRowIndices.push(row);
+                    }
+                }
+
+                if (fullRowIndices.length > 0) {
+                    // 启动消行动画
+                    clearingRows = [...fullRowIndices];
+                    clearAnimTimer = CLEAR_ANIM_DURATION;
+                    return fullRowIndices.length;
+                }
+                return 0;
+            }
+
+            /**
+             * 执行消行：移除已满的行并在顶部添加空行
+             * @param {Array<number>} rowIndices - 要消除的行索引数组
+             */
+            function executeClearRows(rowIndices) {
+                // 从底部向上移除行（避免索引偏移问题）
+                const sortedIndices = [...rowIndices].sort((a, b) => b - a);
+                for (const row of sortedIndices) {
+                    board.splice(row, 1);
+                    board.unshift(new Array(COLS).fill(null));
+                }
+                clearingRows = [];
+            }
+
+            /**
+             * 根据消除行数计算得分
+             * 基础得分：消除1行100分，2行300分，3行500分，4行800分
+             * 实际得分 = 基础得分 × 当前等级
+             * @param {number} linesCleared - 消除的行数
+             * @param {number} currentLevel - 当前等级
+             * @returns {number} 应获得的分数
+             */
+            function calculateScore(linesCleared, currentLevel) {
+                const baseScores = [0, 100, 300, 500, 800];
+                const base = baseScores[Math.min(linesCleared, 4)] || 800;
+                return base * currentLevel;
+            }
+
+            /**
+             * 根据总消除行数计算等级
+             * 每消除10行升1级
+             * @param {number} totalLines - 总消除行数
+             * @returns {number} 当前等级
+             */
+            function calculateLevel(totalLines) {
+                return Math.floor(totalLines / 10) + 1;
+            }
+
+            /**
+             * 根据等级获取重力下落间隔（毫秒）
+             * 等级越高，间隔越短（速度越快）
+             * @param {number} lvl - 当前等级
+             * @returns {number} 重力间隔（毫秒）
+             */
+            function getGravityInterval(lvl) {
+                return Math.max(50, 800 - (lvl - 1) * 65);
+            }
+
+            // ==================== 方块生成与管理 ====================
+
+            /**
+             * 从随机袋中取出一个方块（7-bag系统）
+             * 确保每种方块都出现一次后才会重新洗牌，避免连续重复
+             * @returns {{matrix: Array<Array<number>>, color: {main: string, light: string, dark: string, name: string}}} 从袋子中取出的方块
+             */
+            function popFromBag() {
+                if (pieceBag.length === 0) {
+                    // 重新填充袋子并洗牌
+                    pieceBag = [...ALL_SHAPES];
+                    // Fisher-Yates洗牌算法
+                    for (let i = pieceBag.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [pieceBag[i], pieceBag[j]] = [pieceBag[j], pieceBag[i]];
+                    }
+                }
+                return pieceBag.pop();
+            }
+
+            /**
+             * 生成一个新方块（从预览或随机袋中获取）
+             * 将 nextPieceData 作为当前方块，并预取下一个方块
+             * @returns {{matrix: Array<Array<number>>, color: {main: string, light: string, dark: string, name: string}, x: number, y: number}} 新生成的方块
+             */
+            function spawnPiece() {
+                let shapeData;
+                if (nextPieceData) {
+                    shapeData = nextPieceData;
+                    nextPieceData = popFromBag();
+                } else {
+                    shapeData = popFromBag();
+                    nextPieceData = popFromBag();
+                }
+
+                const matrix = deepCopyMatrix(shapeData.matrix);
+                const color = shapeData.color;
+                const bounds = getMatrixBounds(matrix);
+                const startX = Math.floor((COLS - bounds.width) / 2) - bounds.minCol;
+                const startY = 0;
+
+                return {
+                    matrix: matrix,
+                    color: color,
+                    x: startX,
+                    y: startY,
+                };
+            }
+
+            /**
+             * 确保下一个方块数据存在
+             * 调用时如果 nextPieceData 为空，则从随机袋中取出一个
+             */
+            function ensureNextPiece() {
+                if (!nextPieceData) {
+                    nextPieceData = popFromBag();
+                }
+            }
+
+            // ==================== 方块操作 ====================
+
+            /**
+             * 尝试移动方块，返回是否成功
+             * 如果移动成功，会重置锁定延迟状态
+             * @param {{matrix: Array<Array<number>>, color: any, x: number, y: number}} piece - 要移动的方块
+             * @param {number} dx - X方向移动距离
+             * @param {number} dy - Y方向移动距离
+             * @returns {boolean} 移动是否成功
+             */
+            function tryMove(piece, dx, dy) {
+                const newX = piece.x + dx;
+                const newY = piece.y + dy;
+                if (isValidPosition(piece.matrix, newX, newY)) {
+                    piece.x = newX;
+                    piece.y = newY;
+                    if (lockDelayActive) {
+                        lockDelayActive = false;
+                        lockDelayTimer = 0;
+                    }
+                    return true;
+                }
+                return false;
+            }
+
+            /**
+             * 尝试旋转方块（带踢墙检测），返回是否成功
+             * 如果原位旋转失败，会尝试多种偏移位置
+             * @param {{matrix: Array<Array<number>>, color: any, x: number, y: number}} piece - 要旋转的方块
+             * @returns {boolean} 旋转是否成功
+             */
+            function tryRotate(piece) {
+                // O型方块不需要旋转
+                if (isOShape(piece.matrix)) return false;
+
+                const rotatedMatrix = rotateMatrixClockwise(piece.matrix);
+
+                // 踢墙偏移尝试列表（先尝试原位，再尝试左右偏移）
+                const kickOffsets = [
+                    { dx: 0, dy: 0 }, // 原位旋转
+                    { dx: -1, dy: 0 }, // 左移1格
+                    { dx: 1, dy: 0 }, // 右移1格
+                    { dx: -2, dy: 0 }, // 左移2格
+                    { dx: 2, dy: 0 }, // 右移2格
+                    { dx: 0, dy: -1 }, // 上移1格（处理I型特殊情况）
+                    { dx: 0, dy: -2 }, // 上移2格
+                    { dx: -1, dy: -1 }, // 左上
+                    { dx: 1, dy: -1 }, // 右上
+                ];
+
+                for (const offset of kickOffsets) {
+                    const testX = piece.x + offset.dx;
+                    const testY = piece.y + offset.dy;
+                    if (isValidPosition(rotatedMatrix, testX, testY)) {
+                        piece.matrix = rotatedMatrix;
+                        piece.x = testX;
+                        piece.y = testY;
+                        if (lockDelayActive) {
+                            lockDelayActive = false;
+                            lockDelayTimer = 0;
+                        }
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            /**
+             * 计算幽灵方块位置（当前方块直接落到底部的位置）
+             * 用于显示落点预览，帮助玩家决策
+             * @param {{matrix: Array<Array<number>>, color: any, x: number, y: number}} piece - 目标方块
+             * @returns {number} 幽灵方块的Y坐标
+             */
+            function getGhostPosition(piece) {
+                let ghostY = piece.y;
+                while (isValidPosition(piece.matrix, piece.x, ghostY + 1)) {
+                    ghostY++;
+                }
+                return ghostY;
+            }
+
+            /**
+             * 硬降：直接将方块落到底部
+             * 硬降每格得2分，落下后立即锁定
+             * @param {{matrix: Array<Array<number>>, color: any, x: number, y: number}} piece - 要硬降的方块
+             */
+            function hardDrop(piece) {
+                let dropDistance = 0;
+                while (isValidPosition(piece.matrix, piece.x, piece.y + 1)) {
+                    piece.y++;
+                    dropDistance++;
+                }
+                // 硬降得分：每格2分
+                score += dropDistance * 2;
+                updateScoreDisplay();
+                // 立即锁定方块
+                lockAndProcess(piece);
+            }
+
+            /**
+             * 锁定方块并处理消行、生成新方块
+             * 先固定方块，再检查是否可消行
+             * 有消行则启动动画，无消行则直接生成新方块
+             * @param {{matrix: Array<Array<number>>, color: any, x: number, y: number}} piece - 要锁定的方块
+             */
+            function lockAndProcess(piece) {
+                lockPiece(piece);
+                const clearedCount = clearFullRows();
+
+                if (clearedCount > 0) {
+                    // 有行被消除，启动动画，动画结束后执行消除和计分
+                    // 计分在动画回调中进行
+                } else {
+                    // 没有行被消除，直接生成新方块
+                    spawnNewPiece();
+                }
+            }
+
+            /**
+             * 在消行动画完成后执行消除和计分
+             * 处理分数计算、等级提升、消除行数更新
+             */
+            function finishClearAnimation() {
+                const clearedCount = clearingRows.length;
+                if (clearedCount > 0) {
+                    const earnedScore = calculateScore(clearedCount, level);
+                    score += earnedScore;
+                    totalLinesCleared += clearedCount;
+                    const newLevel = calculateLevel(totalLinesCleared);
+                    if (newLevel !== level) {
+                        level = newLevel;
+                    }
+                    executeClearRows(clearingRows);
+                    updateScoreDisplay();
+                    updateLevelDisplay();
+                    updateLinesDisplay();
+                    // 触发分数弹跳动画
+                    animateScorePop();
+                }
+                clearingRows = [];
+                clearAnimTimer = 0;
+                spawnNewPiece();
+            }
+
+            /**
+             * 生成新方块并检查游戏结束
+             * 如果新方块初始位置就被阻挡，则游戏结束
+             */
+            function spawnNewPiece() {
+                currentPiece = spawnPiece();
+                // 检查新方块是否能放置在初始位置
+                if (!isValidPosition(currentPiece.matrix, currentPiece.x, currentPiece.y)) {
+                    // 游戏结束
+                    gameOver = true;
+                    paused = false; // 确保游戏结束时暂停状态被清除
+                    currentPiece = null;
+                }
+                // 重置移动冷却
+                moveLeftCooldown = 0;
+                moveRightCooldown = 0;
+                rotationHandled = true;
+                softDropActive = false;
+                lockDelayActive = false;
+                lockDelayTimer = 0;
+            }
+
+            /** 分数显示弹跳动画 */
+            function animateScorePop() {
+                scoreDisplay.classList.remove('score-pop');
+                void scoreDisplay.offsetWidth; // 触发回流以重新开始动画
+                scoreDisplay.classList.add('score-pop');
+            }
+
+            /** 更新分数显示 */
+            function updateScoreDisplay() {
+                if (score !== lastDisplayedScore) {
+                    lastDisplayedScore = score;
+                    scoreDisplay.textContent = score.toLocaleString();
+                }
+            }
+
+            /** 更新等级显示 */
+            function updateLevelDisplay() {
+                if (level !== lastDisplayedLevel) {
+                    lastDisplayedLevel = level;
+                    levelDisplay.textContent = level;
+                }
+            }
+
+            /** 更新消除行数显示 */
+            function updateLinesDisplay() {
+                if (totalLinesCleared !== lastDisplayedLines) {
+                    lastDisplayedLines = totalLinesCleared;
+                    linesDisplay.textContent = totalLinesCleared;
+                }
+            }
+
+            // ==================== 渲染函数 ====================
+
+            /** 绘制单个带3D效果的单元格 */
+            function drawCell(ctx, x, y, size, color, alpha = 1) {
+                const mainColor = color.main;
+                const lightColor = color.light;
+                const darkColor = color.dark;
+                const bevel = Math.max(2, size * 0.1); // 斜面宽度
+                const innerBevel = Math.max(1, size * 0.06);
+
+                ctx.globalAlpha = alpha;
+
+                // 主体填充
+                ctx.fillStyle = mainColor;
+                ctx.fillRect(x + bevel, y + bevel, size - bevel * 2, size - bevel * 2);
+
+                // 顶部高光斜面
+                ctx.fillStyle = lightColor;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + size, y);
+                ctx.lineTo(x + size - bevel, y + bevel);
+                ctx.lineTo(x + bevel, y + bevel);
+                ctx.closePath();
+                ctx.fill();
+
+                // 左侧高光斜面
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x, y + size);
+                ctx.lineTo(x + bevel, y + size - bevel);
+                ctx.lineTo(x + bevel, y + bevel);
+                ctx.closePath();
+                ctx.fill();
+
+                // 底部阴影斜面
+                ctx.fillStyle = darkColor;
+                ctx.beginPath();
+                ctx.moveTo(x, y + size);
+                ctx.lineTo(x + size, y + size);
+                ctx.lineTo(x + size - bevel, y + size - bevel);
+                ctx.lineTo(x + bevel, y + size - bevel);
+                ctx.closePath();
+                ctx.fill();
+
+                // 右侧阴影斜面
+                ctx.beginPath();
+                ctx.moveTo(x + size, y);
+                ctx.lineTo(x + size, y + size);
+                ctx.lineTo(x + size - bevel, y + size - bevel);
+                ctx.lineTo(x + size - bevel, y + bevel);
+                ctx.closePath();
+                ctx.fill();
+
+                // 内部光泽（高光点）
+                ctx.fillStyle = lightColor;
+                ctx.globalAlpha = 0.35 * alpha;
+                const shineX = x + bevel + innerBevel;
+                const shineY = y + bevel + innerBevel;
+                const shineW = (size - bevel * 2 - innerBevel * 2) * 0.55;
+                const shineH = (size - bevel * 2 - innerBevel * 2) * 0.45;
+                ctx.fillRect(shineX, shineY, shineW, shineH);
+
+                ctx.globalAlpha = 1;
+            }
+
+            /** 绘制游戏区域背景网格 */
+            function drawGrid(ctx) {
+                // 游戏区域背景
+                ctx.fillStyle = '#0d0d1f';
+                ctx.fillRect(GAME_OFFSET_X, GAME_OFFSET_Y, GAME_WIDTH, GAME_HEIGHT);
+
+                // 绘制网格线
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+                ctx.lineWidth = 0.5;
+                for (let row = 0; row <= ROWS; row++) {
+                    const y = GAME_OFFSET_Y + row * CELL_SIZE;
+                    ctx.beginPath();
+                    ctx.moveTo(GAME_OFFSET_X, y);
+                    ctx.lineTo(GAME_OFFSET_X + GAME_WIDTH, y);
+                    ctx.stroke();
+                }
+                for (let col = 0; col <= COLS; col++) {
+                    const x = GAME_OFFSET_X + col * CELL_SIZE;
+                    ctx.beginPath();
+                    ctx.moveTo(x, GAME_OFFSET_Y);
+                    ctx.lineTo(x, GAME_OFFSET_Y + GAME_HEIGHT);
+                    ctx.stroke();
+                }
+
+                // 游戏区域边框
+                ctx.strokeStyle = '#3a3a60';
+                ctx.lineWidth = 2.5;
+                ctx.strokeRect(GAME_OFFSET_X - 1, GAME_OFFSET_Y - 1, GAME_WIDTH + 2, GAME_HEIGHT + 2);
+
+                // 外发光边框
+                ctx.strokeStyle = 'rgba(100, 100, 180, 0.25)';
+                ctx.lineWidth = 6;
+                ctx.strokeRect(GAME_OFFSET_X - 3, GAME_OFFSET_Y - 3, GAME_WIDTH + 6, GAME_HEIGHT + 6);
+            }
+
+            /** 绘制游戏板上的固定方块 */
+            function drawBoard(ctx) {
+                for (let row = 0; row < ROWS; row++) {
+                    for (let col = 0; col < COLS; col++) {
+                        const cellColor = board[row][col];
+                        if (cellColor) {
+                            // 检查是否在消行动画行中
+                            if (clearingRows.includes(row)) {
+                                // 消行动画：闪烁白色
+                                const progress = 1 - (clearAnimTimer / CLEAR_ANIM_DURATION);
+                                const flashAlpha = 0.5 + 0.5 * Math.sin(progress * Math.PI * 6);
+                                const flashColor = {
+                                    main: '#ffffff',
+                                    light: '#ffffff',
+                                    dark: '#cccccc',
+                                };
+                                const x = GAME_OFFSET_X + col * CELL_SIZE;
+                                const y = GAME_OFFSET_Y + row * CELL_SIZE;
+                                drawCell(ctx, x, y, CELL_SIZE, flashColor, flashAlpha);
+                            } else {
+                                const x = GAME_OFFSET_X + col * CELL_SIZE;
+                                const y = GAME_OFFSET_Y + row * CELL_SIZE;
+                                drawCell(ctx, x, y, CELL_SIZE, cellColor, 1);
+                            }
+                        }
+                    }
+                }
+            }
+
+            /** 绘制当前活动方块 */
+            function drawCurrentPiece(ctx) {
+                if (!currentPiece || gameOver) return;
+                const cells = getOccupiedCells(currentPiece.matrix);
+                for (const cell of cells) {
+                    const x = GAME_OFFSET_X + (currentPiece.x + cell.col) * CELL_SIZE;
+                    const y = GAME_OFFSET_Y + (currentPiece.y + cell.row) * CELL_SIZE;
+                    // 只绘制在游戏区域内的部分
+                    if (currentPiece.y + cell.row >= 0) {
+                        drawCell(ctx, x, y, CELL_SIZE, currentPiece.color, 1);
+                    }
+                }
+            }
+
+            /** 绘制幽灵方块（落点预览） */
+            function drawGhostPiece(ctx) {
+                if (!currentPiece || gameOver) return;
+                const ghostY = getGhostPosition(currentPiece);
+                if (ghostY === currentPiece.y) return; // 已经在底部，不绘制幽灵
+
+                const cells = getOccupiedCells(currentPiece.matrix);
+                for (const cell of cells) {
+                    const boardRow = ghostY + cell.row;
+                    if (boardRow < 0) continue;
+                    const x = GAME_OFFSET_X + (currentPiece.x + cell.col) * CELL_SIZE;
+                    const y = GAME_OFFSET_Y + boardRow * CELL_SIZE;
+                    // 半透明绘制幽灵方块
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.lineWidth = 2;
+                    const inset = 3;
+                    ctx.strokeRect(x + inset, y + inset, CELL_SIZE - inset * 2, CELL_SIZE - inset * 2);
+                    // 内部填充半透明
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+                    ctx.fillRect(x + inset, y + inset, CELL_SIZE - inset * 2, CELL_SIZE - inset * 2);
+                }
+            }
+
+            /** 绘制游戏结束覆盖层 */
+            function drawGameOverOverlay(ctx) {
+                if (!gameOver) return;
+                // 半透明暗色覆盖
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(GAME_OFFSET_X, GAME_OFFSET_Y, GAME_WIDTH, GAME_HEIGHT);
+
+                // "游戏结束"文字
+                const centerX = GAME_OFFSET_X + GAME_WIDTH / 2;
+                const centerY = GAME_OFFSET_Y + GAME_HEIGHT / 2;
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 36px "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = 'rgba(233, 68, 96, 0.8)';
+                ctx.shadowBlur = 20;
+                ctx.fillText('游戏结束', centerX, centerY - 10);
+                ctx.shadowBlur = 0;
+
+                // 重新开始提示
+                ctx.fillStyle = '#cccccc';
+                ctx.font = '16px "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif';
+                ctx.fillText('按空格键重新开始', centerX, centerY + 40);
+                ctx.textAlign = 'start';
+            }
+
+            /** 绘制暂停覆盖层 */
+            function drawPauseOverlay(ctx) {
+                if (!paused || gameOver) return;
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.fillRect(GAME_OFFSET_X, GAME_OFFSET_Y, GAME_WIDTH, GAME_HEIGHT);
+
+                const centerX = GAME_OFFSET_X + GAME_WIDTH / 2;
+                const centerY = GAME_OFFSET_Y + GAME_HEIGHT / 2;
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 30px "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('已暂停', centerX, centerY);
+                ctx.textAlign = 'start';
+            }
+
+            /** 绘制侧边栏装饰元素（在游戏Canvas右侧） */
+            function drawSideDecorations(ctx) {
+                const sideX = GAME_OFFSET_X + GAME_WIDTH + 25;
+                // 标题
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 22px "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('TETRIS', sideX + 55, GAME_OFFSET_Y + 30);
+                ctx.fillStyle = '#8888aa';
+                ctx.font = '11px "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif';
+                ctx.fillText('俄罗斯方块', sideX + 55, GAME_OFFSET_Y + 52);
+                ctx.textAlign = 'start';
+            }
+
+            /** 绘制预览区边框标签 */
+            function drawPreviewLabel(ctx) {
+                const previewAreaX = GAME_OFFSET_X + GAME_WIDTH + 25;
+                const previewAreaY = GAME_OFFSET_Y + 70;
+                ctx.fillStyle = '#8888aa';
+                ctx.font = '10px "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('下一个方块', previewAreaX + 55, previewAreaY - 12);
+                ctx.textAlign = 'start';
+            }
+
+            /** 绘制下一个方块的预览（在独立的预览Canvas上） */
+            function drawPreview() {
+                previewCtx.clearRect(0, 0, PREVIEW_SIZE, PREVIEW_SIZE);
+
+                if (!nextPieceData) return;
+
+                const matrix = nextPieceData.matrix;
+                const color = nextPieceData.color;
+                const cells = getOccupiedCells(matrix);
+
+                // 计算预览方块在预览Canvas中的居中偏移
+                let minRow = 4,
+                    maxRow = 0,
+                    minCol = 4,
+                    maxCol = 0;
+                for (const cell of cells) {
+                    minRow = Math.min(minRow, cell.row);
+                    maxRow = Math.max(maxRow, cell.row);
+                    minCol = Math.min(minCol, cell.col);
+                    maxCol = Math.max(maxCol, cell.col);
+                }
+                const blockWidth = (maxCol - minCol + 1) * PREVIEW_CELL_SIZE;
+                const blockHeight = (maxRow - minRow + 1) * PREVIEW_CELL_SIZE;
+                const offsetX = (PREVIEW_SIZE - blockWidth) / 2 - minCol * PREVIEW_CELL_SIZE;
+                const offsetY = (PREVIEW_SIZE - blockHeight) / 2 - minRow * PREVIEW_CELL_SIZE;
+
+                // 绘制预览方块
+                for (const cell of cells) {
+                    const x = offsetX + cell.col * PREVIEW_CELL_SIZE;
+                    const y = offsetY + cell.row * PREVIEW_CELL_SIZE;
+                    drawCell(previewCtx, x, y, PREVIEW_CELL_SIZE, color, 1);
+                }
+            }
+
+            /** 主渲染函数：绘制所有内容 */
+            function render() {
+                const ctx = gameCtx;
+                // 清空画布
+                ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+                // 绘制背景
+                ctx.fillStyle = '#0a0a18';
+                ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+                // 绘制网格
+                drawGrid(ctx);
+
+                // 绘制游戏板上的固定方块
+                drawBoard(ctx);
+
+                // 绘制幽灵方块
+                drawGhostPiece(ctx);
+
+                // 绘制当前活动方块
+                drawCurrentPiece(ctx);
+
+                // 绘制游戏结束覆盖层
+                drawGameOverOverlay(ctx);
+
+                // 绘制暂停覆盖层
+                drawPauseOverlay(ctx);
+
+                // 绘制侧边装饰
+                drawSideDecorations(ctx);
+                drawPreviewLabel(ctx);
+
+                // 绘制预览
+                drawPreview();
+            }
+
+            // ==================== 游戏逻辑 ====================
+
+            /**
+             * 处理重力下落
+             * 使方块向下移动一格，无法移动时启动锁定延迟
+             */
+            function applyGravity() {
+                if (!currentPiece || gameOver || paused) return;
+                if (clearingRows.length > 0) return; // 消行动画中不下落
+
+                const success = tryMove(currentPiece, 0, 1);
+                if (!success) {
+                    // 无法下移，启动或累积锁定延迟
+                    if (!lockDelayActive) {
+                        lockDelayActive = true;
+                        lockDelayTimer = 0;
+                    }
+                } else {
+                    // 成功下移，重置锁定延迟状态
+                    if (lockDelayActive) {
+                        lockDelayActive = false;
+                        lockDelayTimer = 0;
+                    }
+                }
+            }
+
+            /**
+             * 处理锁定延迟计时
+             * 方块触底后给予玩家调整时间，时间到才锁定
+             * @param {number} deltaTime - 时间增量（毫秒）
+             */
+            function processLockDelay(deltaTime) {
+                if (!lockDelayActive || !currentPiece || clearingRows.length > 0) return;
+
+                lockDelayTimer += deltaTime;
+                if (lockDelayTimer >= LOCK_DELAY) {
+                    lockDelayActive = false;
+                    lockDelayTimer = 0;
+                    lockAndProcess(currentPiece);
+                }
+            }
+
+            /**
+             * 处理软降（加速下落）
+             * 软降每格得1分，触底时立即锁定
+             */
+            function applySoftDrop() {
+                if (!currentPiece || gameOver || paused) return;
+                if (clearingRows.length > 0) return;
+
+                const success = tryMove(currentPiece, 0, 1);
+                if (success) {
+                    score += 1; // 软降每格1分
+                    updateScoreDisplay();
+                } else {
+                    lockAndProcess(currentPiece);
+                }
+                softDropActive = false; // 每次软降后重置标志，等待下次触发
+            }
+
+            /** 重置游戏 */
+            function resetGame() {
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+                createBoard();
+                score = 0;
+                level = 1;
+                totalLinesCleared = 0;
+                gameOver = false;
+                paused = false;
+                clearingRows = [];
+                clearAnimTimer = 0;
+                gravityTimer = 0;
+                lastTime = performance.now();
+                moveLeftCooldown = 0;
+                moveRightCooldown = 0;
+                rotationHandled = true;
+                softDropActive = false;
+                lockDelayActive = false;
+                lockDelayTimer = 0;
+                pieceBag = [];
+                nextPieceData = null;
+                currentPiece = null;
+                keysPressed.clear();
+                lastDisplayedScore = 0;
+                lastDisplayedLevel = 1;
+                lastDisplayedLines = 0;
+
+                updateScoreDisplay();
+                updateLevelDisplay();
+                updateLinesDisplay();
+
+                // 初始化预览和第一个方块
+                ensureNextPiece();
+                currentPiece = spawnPiece();
+                // 确保新方块可以放置
+                if (!isValidPosition(currentPiece.matrix, currentPiece.x, currentPiece.y)) {
+                    gameOver = true;
+                }
+                render();
+                drawPreview();
+
+                // 重新启动游戏循环
+                animationId = requestAnimationFrame(gameLoop);
+            }
+
+            /** 游戏主循环 */
+            function gameLoop(timestamp) {
+                if (!lastTime) lastTime = timestamp;
+                let deltaTime = timestamp - lastTime;
+                lastTime = timestamp;
+
+                // 防止大帧跳跃（如标签页切换后恢复）
+                if (deltaTime > 500) deltaTime = 16;
+
+                if (!gameOver && !paused) {
+                    // 处理消行动画
+                    if (clearingRows.length > 0) {
+                        clearAnimTimer -= deltaTime;
+                        if (clearAnimTimer <= 0) {
+                            finishClearAnimation();
+                        }
+                    } else if (currentPiece) {
+                        // 处理移动冷却
+                        if (moveLeftCooldown > 0) moveLeftCooldown -= deltaTime;
+                        if (moveRightCooldown > 0) moveRightCooldown -= deltaTime;
+
+                        // 处理持续按住左右键的移动（DAS系统简化版）
+                        if (keysPressed.has('ArrowLeft') && moveLeftCooldown <= 0) {
+                            if (tryMove(currentPiece, -1, 0)) {
+                                moveLeftCooldown = MOVE_COOLDOWN;
+                            } else {
+                                moveLeftCooldown = 0;
+                            }
+                        }
+                        if (keysPressed.has('ArrowRight') && moveRightCooldown <= 0) {
+                            if (tryMove(currentPiece, 1, 0)) {
+                                moveRightCooldown = MOVE_COOLDOWN;
+                            } else {
+                                moveRightCooldown = 0;
+                            }
+                        }
+
+                        // 处理软降
+                        if (keysPressed.has('ArrowDown') || softDropActive) {
+                            const softDropInterval = 35;
+                            gravityTimer += deltaTime;
+                            while (gravityTimer >= softDropInterval && currentPiece && clearingRows.length === 0) {
+                                gravityTimer -= softDropInterval;
+                                const pieceBefore = currentPiece;
+                                applySoftDrop();
+                                if (currentPiece !== pieceBefore) break;
+                            }
+                        } else {
+                            // 正常重力
+                            const interval = getGravityInterval(level);
+                            gravityTimer += deltaTime;
+                            while (gravityTimer >= interval && currentPiece && clearingRows.length === 0) {
+                                gravityTimer -= interval;
+                                applyGravity();
+                            }
+                        }
+
+                        // 如果软降键未按下但之前有累积的重力时间，限制累积
+                        if (!keysPressed.has('ArrowDown') && !softDropActive && gravityTimer > getGravityInterval(
+                                level)) {
+                            gravityTimer = getGravityInterval(level);
+                        }
+
+                        // 处理锁定延迟计时
+                        processLockDelay(deltaTime);
+                    }
+
+                    // 更新显示
+                    updateScoreDisplay();
+                    updateLevelDisplay();
+                    updateLinesDisplay();
+                }
+
+                // 渲染
+                render();
+                drawPreview();
+
+                // 继续循环
+                animationId = requestAnimationFrame(gameLoop);
+            }
+
+            // ==================== 输入处理 ====================
+
+            /** 键盘按下事件 */
+            function handleKeyDown(e) {
+                // 防止在输入框中触发
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+                const key = e.key;
+
+                // 空格键重新开始游戏
+                if (key === ' ' || key === 'Spacebar') {
+                    e.preventDefault();
+                    if (gameOver) {
+                        resetGame();
+                        return;
+                    }
+                    // 硬降（非游戏结束时）
+                    if (!gameOver && !paused && currentPiece && clearingRows.length === 0) {
+                        hardDrop(currentPiece);
+                        gravityTimer = 0;
+                    }
+                    return;
+                }
+
+                // P键暂停/恢复
+                if (key === 'p' || key === 'P') {
+                    e.preventDefault();
+                    if (!gameOver) {
+                        paused = !paused;
+                        if (!paused) {
+                            lastTime = performance.now();
+                            gravityTimer = 0;
+                        }
+                    }
+                    return;
+                }
+
+                // 游戏结束或暂停时不处理其他按键
+                if (gameOver || paused) return;
+
+                // 记录按键状态
+                keysPressed.add(key);
+
+                // 上键旋转（仅首次按下时触发，防止连续旋转）
+                if (key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (!rotationHandled && currentPiece && clearingRows.length === 0) {
+                        tryRotate(currentPiece);
+                        rotationHandled = true;
+                    }
+                }
+
+                // 左键移动
+                if (key === 'ArrowLeft') {
+                    e.preventDefault();
+                    if (currentPiece && clearingRows.length === 0 && moveLeftCooldown <= 0) {
+                        if (tryMove(currentPiece, -1, 0)) {
+                            moveLeftCooldown = MOVE_INITIAL_DELAY;
+                        }
+                    }
+                }
+
+                // 右键移动
+                if (key === 'ArrowRight') {
+                    e.preventDefault();
+                    if (currentPiece && clearingRows.length === 0 && moveRightCooldown <= 0) {
+                        if (tryMove(currentPiece, 1, 0)) {
+                            moveRightCooldown = MOVE_INITIAL_DELAY;
+                        }
+                    }
+                }
+
+                // 下键软降
+                if (key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (currentPiece && clearingRows.length === 0) {
+                        softDropActive = true;
+                        gravityTimer = 0; // 重置重力计时器以立即触发软降
+                    }
+                }
+            }
+
+            /** 键盘释放事件 */
+            function handleKeyUp(e) {
+                const key = e.key;
+                keysPressed.delete(key);
+
+                // 上键释放，允许下次旋转
+                if (key === 'ArrowUp') {
+                    rotationHandled = false;
+                }
+
+                // 下键释放，取消软降
+                if (key === 'ArrowDown') {
+                    softDropActive = false;
+                    gravityTimer = 0;
+                }
+
+                // 左右键释放，重置冷却
+                if (key === 'ArrowLeft') {
+                    moveLeftCooldown = 0;
+                }
+                if (key === 'ArrowRight') {
+                    moveRightCooldown = 0;
+                }
+            }
+
+            // ==================== 初始化和事件绑定 ====================
+
+            /** 初始化游戏 */
+            function init() {
+                createBoard();
+                pieceBag = [];
+                nextPieceData = null;
+                ensureNextPiece();
+                currentPiece = spawnPiece();
+                if (!isValidPosition(currentPiece.matrix, currentPiece.x, currentPiece.y)) {
+                    gameOver = true;
+                }
+                updateScoreDisplay();
+                updateLevelDisplay();
+                updateLinesDisplay();
+                lastDisplayedScore = 0;
+                lastDisplayedLevel = 1;
+                lastDisplayedLines = 0;
+                lastTime = performance.now();
+                gravityTimer = 0;
+                render();
+                drawPreview();
+            }
+
+            // 绑定事件
+            window.addEventListener('keydown', handleKeyDown);
+            window.addEventListener('keyup', handleKeyUp);
+
+            // 防止页面在方向键按下时滚动
+            window.addEventListener('keydown', function(e) {
+                const keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '];
+                if (keys.includes(e.key) || e.key === 'Spacebar') {
+                    e.preventDefault();
+                }
+            });
+
+            // 触摸设备的基本支持：在游戏Canvas上添加触摸事件提示
+            // （完整触摸控制需要更多代码，此处提供基本的触摸检测）
+            gameCanvas.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                // 触摸游戏区域时，如果游戏结束则重新开始
+                if (gameOver) {
+                    resetGame();
+                }
+            });
+
+            // 启动游戏
+            init();
+            animationId = requestAnimationFrame(gameLoop);
+
+            // ==================== 调试信息 ====================
+            console.log('🎮 俄罗斯方块已就绪！');
+            console.log('   ⌨️  方向键 ← → 移动方块');
+            console.log('   🔄 上键 ↑ 旋转方块');
+            console.log('   ⬇️  下键 ↓ 软降加速');
+            console.log('   ⏬ 空格键 硬降到底');
+            console.log('   ⏸️  P键 暂停/恢复');
+            console.log('   🎯 消除行数以获取高分！');
+            console.log('   📱 支持移动端触摸（游戏结束点击屏幕重新开始）');
+        })();
+    </script>
+</body>
+</html>

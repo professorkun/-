@@ -1,0 +1,446 @@
+=======================================
+俄罗斯方块 - 函数调用关系文档
+=======================================
+
+一、函数分类索引
+=======================================
+
+【A. 辅助函数】
+1. deepCopyMatrix(matrix) - 深拷贝二维数组
+2. rotateMatrixClockwise(matrix) - 顺时针旋转矩阵90度
+3. isOShape(matrix) - 判断是否为O型方块
+4. getOccupiedCells(matrix) - 获取方块矩阵被占用的单元格坐标
+5. getMatrixBounds(matrix) - 计算方块矩阵的边界
+
+【B. 游戏板操作】
+6. createBoard() - 初始化/清空游戏板
+7. isValidPosition(matrix, px, py) - 检查位置合法性
+8. lockPiece(piece) - 将方块固定到游戏板
+9. clearFullRows() - 检查并消除已填满的行
+10. executeClearRows(rowIndices) - 执行消行
+11. calculateScore(linesCleared, currentLevel) - 计算得分
+12. calculateLevel(totalLines) - 计算等级
+13. getGravityInterval(lvl) - 获取重力下落间隔
+
+【C. 方块生成与管理】
+14. popFromBag() - 从随机袋中取出方块
+15. spawnPiece() - 生成一个新方块
+16. ensureNextPiece() - 确保下一个方块数据存在
+17. spawnNewPiece() - 生成新方块并检查游戏结束
+
+【D. 方块操作】
+18. tryMove(piece, dx, dy) - 尝试移动方块
+19. tryRotate(piece) - 尝试旋转方块
+20. getGhostPosition(piece) - 计算幽灵方块位置
+21. hardDrop(piece) - 硬降（直接到底）
+22. lockAndProcess(piece) - 锁定方块并处理消行
+23. finishClearAnimation() - 消行动画完成后处理
+
+【E. 显示更新】
+24. updateScoreDisplay() - 更新分数显示
+25. updateLevelDisplay() - 更新等级显示
+26. updateLinesDisplay() - 更新消除行数显示
+27. animateScorePop() - 分数显示弹跳动画
+
+【F. 渲染函数】
+28. drawCell(ctx, x, y, size, color, alpha) - 绘制单个带3D效果的单元格
+29. drawGrid(ctx) - 绘制游戏区域背景网格
+30. drawBoard(ctx) - 绘制游戏板上的固定方块
+31. drawCurrentPiece(ctx) - 绘制当前活动方块
+32. drawGhostPiece(ctx) - 绘制幽灵方块
+33. drawGameOverOverlay(ctx) - 绘制游戏结束覆盖层
+34. drawPauseOverlay(ctx) - 绘制暂停覆盖层
+35. drawSideDecorations(ctx) - 绘制侧边栏装饰
+36. drawPreviewLabel(ctx) - 绘制预览区边框标签
+37. drawPreview() - 绘制下一个方块的预览
+38. render() - 主渲染函数
+
+【G. 游戏逻辑】
+39. applyGravity() - 处理重力下落
+40. processLockDelay(deltaTime) - 处理锁定延迟计时
+41. applySoftDrop() - 处理软降（加速下落）
+42. resetGame() - 重置游戏
+43. gameLoop(timestamp) - 游戏主循环
+
+【H. 输入处理】
+44. handleKeyDown(e) - 键盘按下事件
+45. handleKeyUp(e) - 键盘释放事件
+
+【I. 初始化】
+46. init() - 初始化游戏
+
+
+=======================================
+二、函数调用关系图
+=======================================
+
+### 初始化流程
+init()
+├── createBoard()
+├── ensureNextPiece()
+│   └── popFromBag()
+├── spawnPiece()
+│   ├── popFromBag()
+│   ├── deepCopyMatrix()
+│   └── getMatrixBounds()
+├── isValidPosition()
+│   └── getOccupiedCells()
+├── updateScoreDisplay()
+├── updateLevelDisplay()
+├── updateLinesDisplay()
+├── render()
+│   ├── drawGrid()
+│   ├── drawBoard()
+│   │   └── getOccupiedCells()
+│   ├── drawGhostPiece()
+│   │   └── getGhostPosition()
+│   │       └── isValidPosition()
+│   │           └── getOccupiedCells()
+│   ├── drawCurrentPiece()
+│   │   └── getOccupiedCells()
+│   ├── drawGameOverOverlay()
+│   ├── drawPauseOverlay()
+│   ├── drawSideDecorations()
+│   └── drawPreviewLabel()
+├── drawPreview()
+│   └── getOccupiedCells()
+└── gameLoop() [启动循环]
+
+### 游戏主循环 (核心)
+gameLoop(timestamp)
+├── 消行动画处理
+│   └── finishClearAnimation()
+│       ├── calculateScore()
+│       ├── calculateLevel()
+│       ├── executeClearRows()
+│       ├── updateScoreDisplay()
+│       ├── updateLevelDisplay()
+│       ├── updateLinesDisplay()
+│       ├── animateScorePop()
+│       └── spawnNewPiece()
+│           ├── spawnPiece()
+│           │   ├── popFromBag()
+│           │   ├── deepCopyMatrix()
+│           │   └── getMatrixBounds()
+│           ├── isValidPosition()
+│           │   └── getOccupiedCells()
+│           └── [设置状态变量]
+│
+├── 移动处理 (DAS系统)
+│   └── tryMove()
+│       ├── isValidPosition()
+│       │   └── getOccupiedCells()
+│       └── [更新lockDelayActive状态]
+│
+├── 软降处理
+│   └── applySoftDrop()
+│       ├── tryMove()
+│       │   ├── isValidPosition()
+│       │   │   └── getOccupiedCells()
+│       │   └── [更新lockDelayActive状态]
+│       ├── updateScoreDisplay()
+│       └── lockAndProcess()
+│           ├── lockPiece()
+│           │   └── getOccupiedCells()
+│           ├── clearFullRows()
+│           └── [如果没有消行] spawnNewPiece()
+│
+├── 正常重力
+│   └── applyGravity()
+│       └── tryMove()
+│           ├── isValidPosition()
+│           │   └── getOccupiedCells()
+│           └── [更新lockDelayActive状态]
+│
+├── 锁定延迟处理
+│   └── processLockDelay()
+│       └── lockAndProcess()
+│           ├── lockPiece()
+│           │   └── getOccupiedCells()
+│           ├── clearFullRows()
+│           └── [如果没有消行] spawnNewPiece()
+│
+├── 更新显示
+│   ├── updateScoreDisplay()
+│   ├── updateLevelDisplay()
+│   └── updateLinesDisplay()
+│
+└── 渲染
+    ├── render()
+    │   ├── drawGrid()
+    │   ├── drawBoard()
+    │   │   └── getOccupiedCells()
+    │   ├── drawGhostPiece()
+    │   │   └── getGhostPosition()
+    │   │       └── isValidPosition()
+    │   │           └── getOccupiedCells()
+    │   ├── drawCurrentPiece()
+    │   │   └── getOccupiedCells()
+    │   ├── drawGameOverOverlay()
+    │   ├── drawPauseOverlay()
+    │   ├── drawSideDecorations()
+    │   └── drawPreviewLabel()
+    └── drawPreview()
+        └── getOccupiedCells()
+
+
+### 输入处理流程
+handleKeyDown(e)
+├── [空格键] 硬降
+│   └── hardDrop()
+│       ├── isValidPosition()
+│       │   └── getOccupiedCells()
+│       ├── updateScoreDisplay()
+│       └── lockAndProcess()
+│           ├── lockPiece()
+│           │   └── getOccupiedCells()
+│           ├── clearFullRows()
+│           └── [如果没有消行] spawnNewPiece()
+│
+├── [空格键] 游戏结束时重置
+│   └── resetGame()
+│       ├── [取消动画帧]
+│       ├── createBoard()
+│       ├── [重置所有状态变量]
+│       ├── updateScoreDisplay()
+│       ├── updateLevelDisplay()
+│       ├── updateLinesDisplay()
+│       ├── ensureNextPiece()
+│       │   └── popFromBag()
+│       ├── spawnPiece()
+│       │   ├── popFromBag()
+│       │   ├── deepCopyMatrix()
+│       │   └── getMatrixBounds()
+│       ├── isValidPosition()
+│       │   └── getOccupiedCells()
+│       ├── render()
+│       │   ├── drawGrid()
+│       │   ├── drawBoard()
+│       │   ├── drawGhostPiece()
+│       │   ├── drawCurrentPiece()
+│       │   ├── drawGameOverOverlay()
+│       │   ├── drawPauseOverlay()
+│       │   ├── drawSideDecorations()
+│       │   └── drawPreviewLabel()
+│       ├── drawPreview()
+│       └── gameLoop() [重新启动]
+│
+├── [P键] 暂停/恢复
+│
+├── [上键] 旋转
+│   └── tryRotate()
+│       ├── isOShape()
+│       ├── rotateMatrixClockwise()
+│       └── isValidPosition()
+│           └── getOccupiedCells()
+│
+├── [左键/右键] 移动
+│   └── tryMove()
+│       ├── isValidPosition()
+│       │   └── getOccupiedCells()
+│       └── [更新lockDelayActive状态]
+│
+└── [下键] 软降
+    └── [设置softDropActive状态]
+
+handleKeyUp(e)
+└── [更新按键状态变量]
+
+
+=======================================
+三、关键调用场景
+=======================================
+
+### 场景1：方块自然下落并锁定
+游戏时间流逝 → applyGravity() → tryMove() → isValidPosition()
+  → [无法下移] 启动lockDelay → 500ms后 processLockDelay() 
+  → lockAndProcess() → lockPiece() → clearFullRows()
+  → [无消行] spawnNewPiece() → spawnPiece() → 新方块生成
+
+### 场景2：玩家控制方块
+玩家按方向键 → handleKeyDown() → tryMove() / tryRotate()
+  → isValidPosition() → [成功] 更新方块位置 + 重置lockDelay
+
+### 场景3：硬降
+玩家按空格键 → hardDrop() → 循环下移直到无法移动
+  → lockAndProcess() → lockPiece() → clearFullRows()
+
+### 场景4：消行处理
+lockAndProcess() → clearFullRows() → [有消行] 启动动画
+  → gameLoop() 中倒计时 → finishClearAnimation()
+  → calculateScore() → updateScoreDisplay() → animateScorePop()
+  → calculateLevel() → updateLevelDisplay()
+  → executeClearRows() → spawnNewPiece()
+
+### 场景5：游戏重置
+游戏结束按空格 → resetGame() → 初始化所有变量
+  → ensureNextPiece() → spawnPiece() → isValidPosition()
+  → render() → drawPreview() → gameLoop() 重启
+
+### 场景6：渲染流程
+每帧调用 render() → drawGrid() → drawBoard() 
+  → drawGhostPiece() → drawCurrentPiece() → drawGameOverOverlay()
+  → drawPauseOverlay() → drawSideDecorations() → drawPreviewLabel()
+  + drawPreview() 独立调用
+
+
+=======================================
+四、核心数据流程
+=======================================
+
+1. 方块状态管理
+currentPiece → [操作] tryMove/tryRotate → isValidPosition → [锁定] lockPiece → board
+
+2. 得分流程
+消行 → calculateScore() → score更新 → updateScoreDisplay() → animateScorePop()
+
+3. 等级流程
+totalLinesCleared += clearedCount → calculateLevel() → level更新 → updateLevelDisplay()
+
+4. 预览流程
+nextPieceData → drawPreview() → drawCell()
+
+5. 随机袋系统
+pieceBag → popFromBag() → 7个方块全部取出后重新洗牌
+
+
+=======================================
+五、关键常量说明
+=======================================
+
+【游戏板尺寸】
+COLS = 10          // 游戏区域列数（宽度）
+ROWS = 20          // 游戏区域行数（高度）
+CELL_SIZE = 30     // 每个单元格的像素大小
+
+【游戏状态】
+CLEAR_ANIM_DURATION = 180    // 消行动画持续时间（毫秒）
+LOCK_DELAY = 500             // 锁定延迟时间（毫秒）
+MOVE_COOLDOWN = 55           // 移动冷却时间（毫秒）
+MOVE_INITIAL_DELAY = 160     // 首次移动后的初始延迟
+
+【得分系统】
+基础得分：[0, 100, 300, 500, 800]
+- 消除0行: 0分
+- 消除1行: 100分
+- 消除2行: 300分
+- 消除3行: 500分
+- 消除4行: 800分
+- 实际得分 = 基础得分 × 等级
+
+
+=======================================
+六、调用层次结构（深度优先）
+=======================================
+
+Level 0: gameLoop() [入口函数]
+  Level 1: applyGravity()
+    Level 2: tryMove()
+      Level 3: isValidPosition()
+        Level 4: getOccupiedCells()
+  Level 1: processLockDelay()
+    Level 2: lockAndProcess()
+      Level 3: lockPiece()
+        Level 4: getOccupiedCells()
+      Level 3: clearFullRows()
+      Level 3: spawnNewPiece()
+        Level 4: spawnPiece()
+          Level 5: popFromBag()
+          Level 5: deepCopyMatrix()
+          Level 5: getMatrixBounds()
+        Level 4: isValidPosition()
+          Level 5: getOccupiedCells()
+  Level 1: applySoftDrop()
+    Level 2: tryMove()
+      Level 3: isValidPosition()
+        Level 4: getOccupiedCells()
+    Level 2: updateScoreDisplay()
+    Level 2: lockAndProcess()
+  Level 1: render()
+    Level 2: drawGrid()
+    Level 2: drawBoard()
+      Level 3: getOccupiedCells()
+    Level 2: drawGhostPiece()
+      Level 3: getGhostPosition()
+        Level 4: isValidPosition()
+          Level 5: getOccupiedCells()
+    Level 2: drawCurrentPiece()
+      Level 3: getOccupiedCells()
+    Level 2: drawGameOverOverlay()
+    Level 2: drawPauseOverlay()
+    Level 2: drawSideDecorations()
+    Level 2: drawPreviewLabel()
+  Level 1: drawPreview()
+    Level 2: getOccupiedCells()
+
+Level 0: handleKeyDown() [用户输入入口]
+  Level 1: hardDrop()
+    Level 2: isValidPosition()
+      Level 3: getOccupiedCells()
+    Level 2: updateScoreDisplay()
+    Level 2: lockAndProcess()
+      Level 3: lockPiece()
+        Level 4: getOccupiedCells()
+      Level 3: clearFullRows()
+      Level 3: spawnNewPiece()
+  Level 1: resetGame()
+    Level 2: createBoard()
+    Level 2: ensureNextPiece()
+      Level 3: popFromBag()
+    Level 2: spawnPiece()
+      Level 3: popFromBag()
+      Level 3: deepCopyMatrix()
+      Level 3: getMatrixBounds()
+    Level 2: isValidPosition()
+      Level 3: getOccupiedCells()
+    Level 2: render()
+    Level 2: drawPreview()
+    Level 2: gameLoop()
+  Level 1: tryRotate()
+    Level 2: isOShape()
+    Level 2: rotateMatrixClockwise()
+    Level 2: isValidPosition()
+      Level 3: getOccupiedCells()
+  Level 1: tryMove()
+    Level 2: isValidPosition()
+      Level 3: getOccupiedCells()
+
+Level 0: init() [初始化入口]
+  Level 1: createBoard()
+  Level 1: ensureNextPiece()
+    Level 2: popFromBag()
+  Level 1: spawnPiece()
+    Level 2: popFromBag()
+    Level 2: deepCopyMatrix()
+    Level 2: getMatrixBounds()
+  Level 1: isValidPosition()
+    Level 2: getOccupiedCells()
+  Level 1: updateScoreDisplay()
+  Level 1: updateLevelDisplay()
+  Level 1: updateLinesDisplay()
+  Level 1: render()
+  Level 1: drawPreview()
+  Level 1: gameLoop()
+
+
+=======================================
+七、总结
+=======================================
+
+本项目共有 46 个主要函数，分为 9 个功能类别。
+
+核心调用链路：
+1. 初始化 → init() → 游戏循环 gameLoop()
+2. 游戏循环 → 处理输入 + 重力 + 锁定延迟 + 渲染
+3. 用户输入 → handleKeyDown() → 方块操作
+4. 方块锁定 → lockAndProcess() → 消行检测 → 新方块生成
+5. 消行处理 → finishClearAnimation() → 计分 + 升级 + 新方块
+
+关键优化特点：
+- 7-bag 随机系统确保方块均匀分布
+- 锁定延迟机制给玩家调整时间
+- 脏检查机制优化显示更新
+- 软降/硬降双重加速系统
+- DAS（Delay Auto Shift）移动系统
+
+（文档生成时间：2025年）
